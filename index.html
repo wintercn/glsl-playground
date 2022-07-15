@@ -1,0 +1,76 @@
+<canvas width="400" height="400" style="position:absolute;right:0px;"></canvas>
+
+<textarea id="fragShader" style="width:500px;height:500px;">
+precision mediump float;
+void main(){
+    gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+}
+</textarea><br/>
+<button onclick="draw()">draw</button>
+<script>
+//获取canvas
+var canvas = document.getElementsByTagName("canvas")[0];
+
+getContent();
+
+async function getContent() {
+    let url = new URL(location.href);
+    
+    let source = url.searchParams.get("source");//"gist:2e394d1cdb706d15e16e54398762a4ba";
+    let parts;
+    if(parts = source.match(/^gist\:([^\/]+)(?:\/([\s\S]+))?/)) {
+        
+        let r = await (await fetch(`https://api.github.com/gists/${parts[1]}`)).json();
+        
+        
+        if(parts[2]) {
+            document.getElementById("fragShader").value = r.files[parts[1]].content
+        } else {
+            document.getElementById("fragShader").value = r.files[Object.getOwnPropertyNames(r.files)[0]].content
+        }
+
+    }
+    draw();
+    //console.log(source);
+}
+
+function draw(){
+    //获取webgl上下文
+    var gl = canvas.getContext('webgl');
+    //创建顶点着色器
+    var vertShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertShader, `
+    attribute vec4 a_Position;
+    void main(){
+        gl_Position = a_Position;
+    }
+    `);
+    gl.compileShader(vertShader);
+    //创建片段着色器
+    var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragShader,document.getElementById("fragShader").value);
+    gl.compileShader(fragShader);
+    //创建程序
+    var glProgram = gl.createProgram();
+    gl.attachShader(glProgram, vertShader);
+    gl.attachShader(glProgram, fragShader);
+    gl.linkProgram(glProgram);
+    gl.useProgram(glProgram);
+    //传入attribute型参数
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1, 
+    -1, 1,
+    1, 1,
+    1, -1,
+    -1, -1
+    ]), gl.STATIC_DRAW);
+    var a_Position = gl.getAttribLocation(glProgram, 'a_Position');
+    gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+    //绘制三角形
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 5);
+}
+
+</script>
