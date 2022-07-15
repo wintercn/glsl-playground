@@ -29,6 +29,10 @@ async function getContent() {
             document.getElementById("fragShader").value = r.files[Object.getOwnPropertyNames(r.files)[0]].content
         }
 
+    } else {
+        let r = await (await fetch(source)).text();
+        
+        document.getElementById("fragShader").value = r
     }
     draw();
     //console.log(source);
